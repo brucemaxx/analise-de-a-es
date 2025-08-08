@@ -1,5 +1,6 @@
 import yfinance as yf
 import pandas as pd
+import os
 
 def download_stock_data(ticker, start_date, end_date):
     """
@@ -28,7 +29,8 @@ def download_stock_data(ticker, start_date, end_date):
 
 def save_data_to_csv(data, filename):
     """
-    Salva um DataFrame em um arquivo CSV.
+    Salva um DataFrame em um arquivo CSV, tratando o índice de data como uma coluna.
+    Cria o diretório se ele não existir.
 
     Args:
         data (pd.DataFrame): O DataFrame a ser salvo.
@@ -36,14 +38,22 @@ def save_data_to_csv(data, filename):
     """
     if not data.empty:
         try:
-            data.to_csv(filename)
+            directory = os.path.dirname(filename)
+            if directory and not os.path.exists(directory):
+                os.makedirs(directory)
+                print(f"Diretório '{directory}' criado.")
+            
+            # Converte o índice de data para uma coluna chamada 'Date'
+            data = data.reset_index()
+            # Salva o DataFrame no CSV
+            data.to_csv(filename, index=False)
             print(f"Dados salvos em {filename}.")
         except Exception as e:
             print(f"Erro ao salvar dados em {filename}: {e}")
 
 def load_data_from_csv(filename):
     """
-    Carrega dados de um arquivo CSV para um DataFrame.
+    Carrega dados de um arquivo CSV para um DataFrame, definindo 'Date' como o índice.
 
     Args:
         filename (str): O nome do arquivo CSV a ser carregado.
@@ -53,6 +63,7 @@ def load_data_from_csv(filename):
     """
     try:
         print(f"Carregando dados de {filename}...")
+        # Lê o CSV e já define 'Date' como índice e a interpreta como data
         data = pd.read_csv(filename, index_col='Date', parse_dates=True)
         print("Dados carregados com sucesso.")
         return data
@@ -65,7 +76,7 @@ def load_data_from_csv(filename):
 
 if __name__ == '__main__':
     # Exemplo de uso para testar o módulo
-    ticker = 'VALE3.SA' # Exemplo de ticker da B3
+    ticker = 'VALE3.SA'
     start_date = '2023-01-01'
     end_date = '2024-01-01'
     filename = '../data/VALE3_history.csv'
@@ -76,5 +87,6 @@ if __name__ == '__main__':
 
     # Carrega os dados salvos
     loaded_data = load_data_from_csv(filename)
-    print("\nDataFrame carregado:")
-    print(loaded_data.head())
+    if not loaded_data.empty:
+        print("\nDataFrame carregado:")
+        print(loaded_data.head())
