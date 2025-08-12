@@ -5,7 +5,7 @@ import os
 def download_stock_data(ticker, start_date, end_date):
     """
     Baixa dados históricos de uma ação usando a biblioteca yfinance.
-
+    
     Args:
         ticker (str): O código (ticker) da ação, por exemplo, 'PETR4.SA'.
         start_date (str): A data de início no formato 'YYYY-MM-DD'.
@@ -43,9 +43,7 @@ def save_data_to_csv(data, filename):
                 os.makedirs(directory)
                 print(f"Diretório '{directory}' criado.")
             
-            # Converte o índice de data para uma coluna chamada 'Date'
             data = data.reset_index()
-            # Salva o DataFrame no CSV
             data.to_csv(filename, index=False)
             print(f"Dados salvos em {filename}.")
         except Exception as e:
@@ -53,7 +51,7 @@ def save_data_to_csv(data, filename):
 
 def load_data_from_csv(filename):
     """
-    Carrega dados de um arquivo CSV para um DataFrame, definindo 'Date' como o índice.
+    Carrega dados de um arquivo CSV para um DataFrame e garante a tipagem correta.
 
     Args:
         filename (str): O nome do arquivo CSV a ser carregado.
@@ -63,8 +61,14 @@ def load_data_from_csv(filename):
     """
     try:
         print(f"Carregando dados de {filename}...")
-        # Lê o CSV e já define 'Date' como índice e a interpreta como data
-        data = pd.read_csv(filename, index_col='Date', parse_dates=True)
+        data = pd.read_csv(filename)
+        data['Date'] = pd.to_datetime(data['Date'])
+        data.set_index('Date', inplace=True)
+        numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+        for col in numeric_cols:
+            if col in data.columns:
+                data[col] = pd.to_numeric(data[col], errors='coerce')
+        
         print("Dados carregados com sucesso.")
         return data
     except FileNotFoundError:
@@ -73,20 +77,3 @@ def load_data_from_csv(filename):
     except Exception as e:
         print(f"Erro ao carregar dados de {filename}: {e}")
         return pd.DataFrame()
-
-if __name__ == '__main__':
-    # Exemplo de uso para testar o módulo
-    ticker = 'VALE3.SA'
-    start_date = '2023-01-01'
-    end_date = '2024-01-01'
-    filename = '../data/VALE3_history.csv'
-
-    # Baixa e salva os dados
-    stock_data = download_stock_data(ticker, start_date, end_date)
-    save_data_to_csv(stock_data, filename)
-
-    # Carrega os dados salvos
-    loaded_data = load_data_from_csv(filename)
-    if not loaded_data.empty:
-        print("\nDataFrame carregado:")
-        print(loaded_data.head())
